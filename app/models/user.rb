@@ -7,32 +7,46 @@ class User < ApplicationRecord
   has_many :books
   has_many :book_comments, dependent: :destroy
   has_many :favorites, dependent: :destroy
-  
+
   has_many :active_relationships, class_name: "Relationship", foreign_key: "follower_id", dependent: :destroy
-  has_many :following, through: :active_relationships, source: :followed
-  
+  has_many :followings, through: :active_relationships, source: :followed
+
   has_many :passive_relationships, class_name: "Relationship", foreign_key: "followed_id", dependent: :destroy
   has_many :followers, through: :passive_relationships, source: :follower
-  
+
   attachment :profile_image, destroy: false
-  
+
   validates :name, length: { minimum: 2, maximum: 20 }, uniqueness: true
   validates :introduction, length: {maximum: 50}
-  
+
   def get_profile_image
     (profile_image.attached?) ? profile_image : 'no_image.jpg'
   end
-  
+
   def follow(user)
-    relationships.create(followed_id: user.id)
+    active_relationships.create(followed_id: user.id)
   end
 
   def unfollow(user)
-    relationships.find_by(followed_id: user.id).destroy
+    active_relationships.find_by(followed_id: user.id).destroy
   end
 
   def following?(user)
     followings.include?(user)
   end
   
+  def self.search(search,word)
+    if search == "forward_match"
+      @user = User.where("name LIKE?", "#{word}%")
+    elsif search == "backward_match"
+      @user = User.where("name LIKE?", "%#{word}")
+    elsif search == "perfect_match"
+      @user = User.where("name LIKE?", "#{word}")
+    elsif search == "partial_match"
+      @user = User.where("name LIKE?", "%#{word}%")
+    else
+      @user = User.all
+    end
+  end
+
 end
